@@ -10,7 +10,7 @@ Manage subscribing and unsubscribing from channels, handling events, whispers, a
 Create a subscription to a specific channel. Provide any required parameters for public, private or presence channels.
 
 ```ts
-const sub = wskit.channel('chats.$chatId', { chatId })
+const sub = wskit.channel('chats.$chatId', { type: 'presence', params: { chatId } })
 ```
 
 ### Unsubscribing from a channel
@@ -92,11 +92,9 @@ sub.whisper('userIsTyping', { userId });
 ### Listen for a whisper
 
 ```ts
-const unsub = sub.listenForWhisper('userIsTyping', (event) => {
+sub.listenForWhisper('userIsTyping', (event) => {
   console.log(event);
 });
-
-unsub();
 ```
 ### Stop listening for a whisper
 
@@ -128,7 +126,7 @@ unsub();
 
 ## Laravel notification
 
-### Listen
+### Listen for a notification
 
 Listen for `.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated` event on channel.
 
@@ -138,13 +136,17 @@ sub.notification((notif) => {
 });
 ```
 
-### Stop listening
+### Stop listening for a notification
 
-```ts
-// Using returned unsubscribe function
-const unsub = sub.notification((notif) => {
-  console.log(notif)
-});
+<Tabs items={['Using returned unsubscribe function']}>
+  <Tabs.Tab>
+    ```ts
+    // Using returned unsubscribe function
+    const unsub = sub.notification((notif) => {
+      console.log(notif)
+    });
 
-unsub()
-```
+    unsub()
+    ```
+  </Tabs.Tab>
+</Tabs>
