@@ -1,0 +1,87 @@
+import { StyledLink } from '@/components/styled-link'
+import { Tabs } from 'nextra/components'
+
+# Quick start
+
+WebSocketKit is a strongly-typed abstraction layer for managing WebSocket-based pub/sub communication (e.g. via <StyledLink href="https://pusher.com/channels">Pusher</StyledLink>) with full TypeScript support.
+
+It’s built as a modern, more type safe alternative for <StyledLink href="https://github.com/laravel/echo">Laravel Echo</StyledLink>, designed with frontend frameworks in mind — especially React.
+
+## Installation
+
+<Tabs items={['npm', 'pnpm', 'yarn', 'bun']} defaultIndex="1">
+  <Tabs.Tab>
+    ```shell copy
+    npm i websocketkit
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```shell copy
+    pnpm add websocketkit
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```shell copy
+    yarn add websocketkit
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```shell copy
+    bun add websocketkit
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+## Create client
+
+Initialize and export a reusable WsKit instance using your Pusher configuration.
+Use this client to handle all real-time events across your application.
+
+```ts filename="wskit.ts"
+import { WsKit } from 'websocketkit'
+import Pusher from "pusher-js";
+
+const options = {
+  //...
+}
+
+/* Or import your existing client */
+const pusher = new Pusher("YOUR_APP_KEY", options);
+
+const wskit = new WsKit(pusher);
+
+export { wskit }
+```
+
+If you’re using React, wrap your app with the `WsKitProvider` to make the client accessible via context.
+This enables usage of the `useWsKit()` hook in any component.
+
+```ts filename="wskit-provider.ts"
+import { createElement, createContext, useContext, type ReactNode, type ReactElement } from "react";
+import type { WsKit } from "websocketkit";
+
+export const WsKitContext = createContext<WsKit | undefined>(undefined);
+
+export const useWsKit = () => {
+    const context = useContext(WsKitContext);
+
+    if (!context) {
+        throw new Error("useWsKit must be used within WsKitProvider.");
+    }
+
+    return context;
+};
+
+export type WsKitProviderProps = {
+    wskit: WsKit;
+    children?: ReactNode;
+};
+
+export const WsKitProvider = ({ wskit, children }: WsKitProviderProps): ReactElement => {
+    return createElement(
+        WsKitContext.Provider,
+        { value: wskit },
+        children
+    );
+};
+```
