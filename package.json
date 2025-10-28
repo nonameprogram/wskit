@@ -1,11 +1,12 @@
 {
   "name": "websocketkit",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nonameprogram/wskit.git"
   },
+  "homepage": "https://wskit.bkosinski.dev",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
