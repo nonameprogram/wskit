@@ -3,39 +3,45 @@ import type { PrivateChannel } from './channels/private';
 import type { PresenceChannel } from './channels/presence';
 
 export type ChannelTypeMap<
-    C extends keyof DefaultChannels = keyof DefaultChannels,
+  C extends keyof DefaultChannels = keyof DefaultChannels,
 > = {
-    public: PublicChannel<C>;
-    private: PrivateChannel<C>;
-    presence: PresenceChannel<C>;
+  public: PublicChannel<C>;
+  private: PrivateChannel<C>;
+  presence: PresenceChannel<C>;
 };
 
 export type ChannelDefinition = {
-    type: keyof ChannelTypeMap;
-    params: Record<string, string | number>;
-    events: Record<string, any>;
+  type: keyof ChannelTypeMap;
+  params: Record<string, string | number>;
+  events: Record<string, any>;
+  whispers: Record<string, any>;
 };
 
 export interface ChannelRegistry {}
 
 export interface Register {
-    channels: ChannelRegistry;
+  channels: ChannelRegistry;
 }
 
 export type DefaultChannels = Register extends {
-        channels: infer T;
-    }
-    ? T
-    : ChannelRegistry;
+  channels: infer T;
+}
+  ? T
+  : ChannelRegistry;
 
 export type LogLevel = 'info' | 'error' | 'warn';
 
 export type Logger = (
-    logLevel: LogLevel,
-    message: string,
-    extraData?: Record<string, unknown>
+  logLevel: LogLevel,
+  message: string,
+  extraData?: Record<string, unknown>,
 ) => void;
 
 export type WsKitOptions = {
-    logger?: Logger;
+  logger?: Logger;
+};
+
+export type Member = {
+  id: string;
+  info: Record<string, any>;
 };

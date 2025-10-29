@@ -3,13 +3,9 @@ import type { ChannelTypeMap, DefaultChannels } from './types';
 import type { WsKit } from './ws-kit';
 import { nanoid } from 'nanoid/non-secure';
 
-/**
- * TODO: Implement listen for whisper, stop listening for whisper, notification, subscribed, error
- * https://github.com/laravel/echo/blob/18e4b0f63b72f166aba0300c269285818b46dba9/src/channel/channel#L28
- */
 export abstract class SubChannel<
-    C extends keyof DefaultChannels = keyof DefaultChannels,
-    ChannelType extends keyof ChannelTypeMap<C> = 'public',
+  C extends keyof DefaultChannels = keyof DefaultChannels,
+  ChannelType extends keyof ChannelTypeMap<C> = 'public',
 > {
   _client: WsKit;
 
@@ -18,8 +14,8 @@ export abstract class SubChannel<
   protected masterChannel: MasterChannel;
 
   protected listeners: Record<
-      keyof Extract<DefaultChannels[C]['events'], { type: ChannelType }>,
-      CallableFunction[]
+    keyof Extract<DefaultChannels[C]['events'], { type: ChannelType }>,
+    CallableFunction[]
   > = {} as any;
 
   protected constructor(client: WsKit, masterChannel: MasterChannel) {
@@ -32,12 +28,15 @@ export abstract class SubChannel<
     this.masterChannel.register(this);
   }
 
-  public off(event: keyof Extract<DefaultChannels[C]['events'], { type: ChannelType }>, callback?: CallableFunction) {
+  public off(
+    event: keyof Extract<DefaultChannels[C]['events'], { type: ChannelType }>,
+    callback?: CallableFunction,
+  ) {
     if (!this.listeners[event]) return;
 
     if (callback) {
       this.listeners[event] = this.listeners[event].filter(
-          (cb) => cb !== callback
+        (cb) => cb !== callback,
       );
     } else {
       this.listeners[event] = [];
@@ -57,15 +56,15 @@ export abstract class SubChannel<
    * Register event
    */
   public on<
-      E extends keyof Extract<
-          DefaultChannels[C],
-          { type: ChannelType }
-      >['events'],
+    E extends keyof Extract<
+      DefaultChannels[C],
+      { type: ChannelType }
+    >['events'],
   >(
-      event: E,
-      callback: (
-          evt: Extract<DefaultChannels[C], { type: ChannelType }>['events'][E]
-      ) => void
+    event: E,
+    callback: (
+      evt: Extract<DefaultChannels[C], { type: ChannelType }>['events'][E],
+    ) => void,
   ) {
     if (!this.listeners[event]) {
       this.listeners[event] = [];
@@ -87,37 +86,63 @@ export abstract class SubChannel<
     this.listeners[event].forEach((callback) => callback(payload));
   }
 
-  whisper(eventName: string, data: Record<any, any>) {
-    this.masterChannel.sub.trigger(`client-${eventName}`, data);
+  whisper<
+    E extends keyof Extract<
+      DefaultChannels[C],
+      { type: ChannelType }
+    >['whispers'],
+  >(
+    eventName: E,
+    data: Extract<DefaultChannels[C], { type: ChannelType }>['whispers'][E],
+  ) {
+    /**
+     * Client events must be prefixed by `client-`.
+     * Events with any other prefix will be rejected by the Channels server
+     */
+    this.masterChannel.sub.trigger(`client-${String(eventName)}`, data);
   }
 
-  listenForWhisper(event: string, callback: CallableFunction) {
-    // @ts-ignore
-    return this.on('client-' + event, callback);
+  listenForWhisper<
+    E extends keyof Extract<
+      DefaultChannels[C],
+      { type: ChannelType }
+    >['whispers'],
+  >(
+    event: E,
+    callback: (
+      evt: Extract<DefaultChannels[C], { type: ChannelType }>['whispers'][E],
+    ) => void,
+  ) {
+    return this.on(('client-' + String(event)) as E, callback);
   }
 
-  stopListeningForWhisper(event: string, callback?: CallableFunction) {
-    return this.off('client-' + event, callback);
+  stopListeningForWhisper<
+    E extends keyof Extract<
+      DefaultChannels[C],
+      { type: ChannelType }
+    >['whispers'],
+  >(
+    eventName: E,
+    callback?: (
+      evt: Extract<DefaultChannels[C], { type: ChannelType }>['whispers'][E],
+    ) => void,
+  ) {
+    return this.off('client-' + String(eventName), callback);
   }
 
-  notification(callback: CallableFunction) {
+  notification(callback: (notification: Record<string, any>) => void) {
     return this.on(
-        '.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated',
-        // @ts-ignore
-        callback
+      '.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated',
+      callback,
     );
   }
 
-  subscribed(callback: CallableFunction) {
-    this.on('pusher:subscription_succeeded', () => {
-      callback();
-    });
+  subscribed(callback: () => void): void {
+    this.on('pusher:subscription_succeeded', callback);
   }
 
-  error(callback: CallableFunction): void {
-    this.on('pusher:subscription_error', (status: Record<string, any>) => {
-      callback(status);
-    });
+  error(callback: (error: Record<string, any>) => void): void {
+    this.on('pusher:subscription_error', callback);
   }
 
   /**

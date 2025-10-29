@@ -1,0 +1,271 @@
+import { StyledLink } from '@/components/styled-link'
+import { Tabs } from 'nextra/components';
+import { Callout } from 'nextra/components'
+import { TSDoc, generateDefinition } from 'nextra/tsdoc'
+import Unsubscribe from '../../components/blocks/unsubscribe.mdx'
+import ChatsPresence from '../../components/blocks/chats-presence.mdx'
+
+<div className="hidden">
+```ts twoslash include main
+import { WsKit } from "websocketkit";
+import Pusher from 'pusher-js';
+
+declare module 'websocketkit' {
+  interface ChannelRegistry {
+    'chats.$chatId': {
+      type: 'presence';
+      params: {
+        chatId: string;
+      };
+      events: {
+        messageSent: {
+          userId: string,
+          message: string,
+          timestamp: string,
+        }
+      };
+    };
+  }
+}
+
+const pusher = new Pusher('TEST', {cluster: 'mt1'});
+const wskit = new WsKit(pusher);
+// ---cut---
+
+```
+</div>
+
+# Presence channel
+
+Presence channels build on the security of Private channels and expose the additional feature of an awareness of who is subscribed to that channel.
+
+## Subscribe
+
+Create a subscription to a specific channel. Provide any required parameters for public, private or presence channels.
+
+```ts twoslash include sub
+// @include: main
+// ---cut---
+const sub = wskit.subscribe('chats.$chatId', { type: 'presence', params: { chatId: '1' }});
+```
+
+## Unsubscribe
+
+Stop receiving events and clear all listeners from the subscription.
+
+```ts twoslash
+// @include: sub
+// ---cut---
+sub.dispose();
+```
+
+## Events
+
+### Listen for an event
+
+Subscribe to a specific event on the channel.
+
+```ts twoslash
+// @include: sub
+// ---cut---
+sub.on('messageSent', (event) => {
+  /** Hover over `event` to view its inferred type */
+})
+```
+
+### Stop listening for an event
+
+<Callout type="important">
+  This should only be used when you want to stop listening for a specific event without unsubscribing from the channel; otherwise, calling `sub.dispose()` is sufficient.
+</Callout>
+
+Remove a specific listener using either the returned unsubscribe function or the original callback reference.
+
+<Tabs items={['Using returned unsubscribe function', 'Using original callback reference']}>
+  <Tabs.Tab>
+```ts twoslash
+// @include: sub
+// ---cut---
+const unsub = sub.on('messageSent', (event) => {
+  /** Hover over `event` to view its inferred type */
+})
+
+//Later
+unsub();
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```ts twoslash
+    // @include: sub
+    // ---cut---
+    /** You have to explicitly define the type of the event **/
+    const messageSentHandler = (event: { userId: string, message: string }) => {
+      /** Do something with the event **/
+    }
+
+    const unsub = sub.on('messageSent', messageSentHandler)
+
+    //Later
+    sub.off('messageSent', messageSentHandler);
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+## Notifications
+
+### Listen for a notification
+
+Listen for `.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated` event on a channel.
+
+```ts twoslash
+// @include: sub
+// ---cut---
+sub.notification((notif) => {
+  console.log(notif)
+});
+```
+
+### Stop listening for a notification
+
+<Callout type="important">
+  This should only be used when you want to stop listening for a specific event without unsubscribing from the channel; otherwise, calling `sub.dispose()` is sufficient.
+</Callout>
+
+<Tabs items={['Using returned unsubscribe function']}>
+  <Tabs.Tab>
+    ```ts twoslash
+    // @include: sub
+    // ---cut---
+    // Using returned unsubscribe function
+    const unsub = sub.notification((notif) => {
+      console.log(notif)
+    });
+
+    unsub()
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+## Client Events
+
+Communicate directly with other subscribers on the channel.
+
+### Send a whisper
+
+```ts twoslash
+// @include: sub
+// ---cut---
+sub.whisper('userIsTyping', { userId });
+```
+
+### Listen for a whisper
+
+```ts twoslash
+// @include: sub
+// ---cut---
+sub.listenForWhisper('userIsTyping', (event) => {
+  /** Do something with the event **/
+})
+```
+
+### Stop listening for a whisper
+
+<Callout type="important">
+  This should only be used when you want to stop listening for a specific event without unsubscribing from the channel; otherwise, calling `sub.dispose()` is sufficient.
+</Callout>
+
+<Tabs items={['Using returned unsubscribe function', 'Using original callback reference']}>
+  <Tabs.Tab>
+    ```ts twoslash
+    // @include: sub
+    // ---cut---
+    // Using returned unsubscribe function
+    const unsub = sub.listenForWhisper('userIsTyping', (event) => {
+      console.log(event);
+    });
+
+    unsub();
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```ts twoslash
+    // @include: sub
+    // ---cut---
+    // Using original callback reference
+    const userIsTypingHandler = (event) => {
+      console.log(event);
+    }
+
+    sub.listenForWhisper('userIsTyping', userIsTypingHandler);
+
+    // Later
+    sub.stopListeningForWhisper('userIsTyping', userIsTypingHandler);
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+## Presence Events
+
+Presence channels have a number of pre-defined events that can be bound to in order to notify a connected client about users joining or leaving the channel.
+
+### Here
+
+The `here` callback will be executed immediately once the channel is joined successfully, and will receive an array containing the user information for all of the other users currently subscribed to the channel.
+
+```ts twoslash
+// @include: sub
+// ---cut---
+sub.here((members) => {
+  console.log(members);
+})
+```
+
+### Joining
+
+Triggered when someone joins the channel.
+
+```ts twoslash
+// @include: sub
+// ---cut---
+sub.joining((member) => {
+  console.log(member);
+})
+```
+
+### Leaving
+
+Triggered when someone leaves the channel.
+
+```ts twoslash
+// @include: sub
+// ---cut---
+sub.leaving((member) => {
+  console.log(member);
+})
+```
+
+## Internal Events
+
+### Subscription succeeded
+
+Triggered when the subscription is successfully established.
+
+```ts twoslash
+// @include: sub
+// ---cut---
+sub.subscribed(() => {
+  /** Do something after successful subscription **/
+})
+```
+
+### Subscription error
+
+Triggered when authorization fails for private or presence channels. Internally, this listens for the `pusher:subscription_error` <StyledLink href="https://pusher.com/docs/channels/using_channels/events/#pushersubscription_error-1995773905">event</StyledLink>.
+
+```ts twoslash
+// @include: sub
+// ---cut---
+sub.error((error) => {
+  /** Handle subscription error **/
+})
+```

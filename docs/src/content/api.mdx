@@ -58,26 +58,32 @@ sub.on('messageReceived', (event) => {
 
 Remove a specific listener using either the returned unsubscribe function or the original callback reference.
 
-```ts
-// Using returned unsubscribe function
-const unsub = sub.on('messageReceived', (event) => {
-  console.log(event.message);
-})
+<Tabs items={['Using returned unsubscribe function', 'Using original callback reference']}>
+  <Tabs.Tab>
+    ```ts
+    // Using returned unsubscribe function
+    const unsub = sub.on('messageReceived', (event) => {
+      console.log(event.message);
+    })
 
-// Later
-unsub();
-```
-```ts
-// Using original callback reference
-const messageReceivedHandler = (event) => {
-  console.log(event);
-};
+    // Later
+    unsub();
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```ts
+    // Using original callback reference
+    const messageReceivedHandler = (event) => {
+      console.log(event);
+    };
 
-sub.on('messageReceived', messageReceivedHandler)
+    sub.on('messageReceived', messageReceivedHandler)
 
-// Later
-sub.off(messageReceivedHandler);
-```
+    // Later
+    sub.off(messageReceivedHandler);
+    ```
+  </Tabs.Tab>
+</Tabs>
 
 ## Whisper
 
