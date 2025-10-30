@@ -42,8 +42,8 @@ importers:
         specifier: ^27.0.2
         version: 27.0.2
       websocketkit:
-        specifier: 0.1.0-alpha.4
-        version: 0.1.0-alpha.4(pusher-js@8.4.0)
+        specifier: 0.1.0-alpha.5
+        version: 0.1.0-alpha.5(pusher-js@8.4.0)
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3.3.1
@@ -3364,8 +3364,8 @@ packages:
   web-namespaces@2.0.1:
     resolution: {integrity: sha512-bKr1DkiNa2krS7qxNtdrtHAmzuYGFQLiQ13TsorsdT6ULTkPLKuu5+GsFpDlg6JFjUTwX2DyhMPG2be8uPrqsQ==}
 
-  websocketkit@0.1.0-alpha.4:
-    resolution: {integrity: sha512-g+0HyZIlm2Ji6omB1TwMqM1mPko6vMcxN6LROQT35lo7nwFykUWIr87dy68mREUlyLfJM3DWm0y/KIFVbilW+g==}
+  websocketkit@0.1.0-alpha.5:
+    resolution: {integrity: sha512-Xty5ML3zsL3wiopNwUL03Zs5qcW6rO2PvjeiynuRjaXp3+aVWtNxvYBjB/lrpg3yg5cf6DL6P5Gk9XOiPNZxWQ==}
     peerDependencies:
       pusher-js: ^8.0.0
 
@@ -7639,7 +7639,7 @@ snapshots:
 
   web-namespaces@2.0.1: {}
 
-  websocketkit@0.1.0-alpha.4(pusher-js@8.4.0):
+  websocketkit@0.1.0-alpha.5(pusher-js@8.4.0):
     dependencies:
       nanoid: 5.1.6
       pusher-js: 8.4.0

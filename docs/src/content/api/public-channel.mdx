@@ -1,6 +1,34 @@
 import { StyledLink } from '@/components/styled-link'
 import { Tabs } from 'nextra/components';
 import { Callout } from 'nextra/components'
+import { version } from 'node:os';
+
+<div className="hidden">
+```ts twoslash include main
+import { WsKit } from "websocketkit";
+import Pusher from 'pusher-js';
+
+declare module 'websocketkit' {
+  interface ChannelRegistry {
+    'application': {
+      type: 'public';
+      params: {};
+      events: {
+        newVersionAvailable: {
+          version: string,
+          timestamp: string,
+        }
+      };
+    };
+  }
+}
+
+const pusher = new Pusher('TEST', {cluster: 'mt1'});
+const wskit = new WsKit(pusher);
+// ---cut---
+
+```
+</div>
 
 # Public channel
 
@@ -12,15 +40,19 @@ You can subscribe and unsubscribe from channels at any time. There’s no need t
 
 Create a subscription to a specific channel. Provide any required parameters for public, private or presence channels.
 
-```ts
-const sub = wskit.channel('chats', { type:'public' })
+```ts twoslash include sub
+// @include: main
+// ---cut---
+const sub = wskit.subscribe('application', { type:'public', params: {} })
 ```
 
 ## Unsubscribe
 
 Stop receiving events and clear all listeners from the subscription.
 
-```ts
+```ts twoslash
+// @include: sub
+// ---cut---
 sub.dispose();
 ```
 
@@ -30,9 +62,11 @@ sub.dispose();
 
 Subscribe to a specific event on the channel.
 
-```ts
-sub.on('messageReceived', (event) => {
-  console.log(event.message);
+```ts twoslash
+// @include: sub
+// ---cut---
+sub.on('newVersionAvailable', (event) => {
+  /** Do something with the event **/
 })
 ```
 
@@ -46,9 +80,11 @@ Remove a specific listener using either the returned unsubscribe function or the
 
 <Tabs items={['Using returned unsubscribe function', 'Using original callback reference']}>
   <Tabs.Tab>
-    ```ts
-    const unsub = sub.on('messageReceived', (event) => {
-      console.log(event.message);
+    ```ts twoslash
+    // @include: sub
+    // ---cut---
+    const unsub = sub.on('newVersionAvailable', (event) => {
+      /** Do something with the event **/
     })
 
     // Later
@@ -56,15 +92,18 @@ Remove a specific listener using either the returned unsubscribe function or the
     ```
   </Tabs.Tab>
   <Tabs.Tab>
-    ```ts
-    const messageReceivedHandler = (event) => {
-      console.log(event);
+    ```ts twoslash
+    // @include: sub
+    // ---cut---
+    /** You have to explicitly define the type of the event **/
+    const newVersionAvailableHandler = (event: { version: string, timestamp: string }) => {
+      /** Do something with the event **/
     };
 
-    sub.on('messageReceived', messageReceivedHandler)
+    sub.on('newVersionAvailable', newVersionAvailableHandler)
 
     // Later
-    sub.off(messageReceivedHandler);
+    sub.off('newVersionAvailable', newVersionAvailableHandler);
     ```
   </Tabs.Tab>
 </Tabs>
@@ -75,9 +114,11 @@ Remove a specific listener using either the returned unsubscribe function or the
 
 Listen for `.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated` event on a channel.
 
-```ts
+```ts twoslash
+// @include: sub
+// ---cut---
 sub.notification((notif) => {
-  console.log(notif)
+  /** Do something with a notification event **/
 });
 ```
 
@@ -89,10 +130,12 @@ sub.notification((notif) => {
 
 <Tabs items={['Using returned unsubscribe function']}>
   <Tabs.Tab>
-    ```ts
+    ```ts twoslash
+    // @include: sub
+    // ---cut---
     // Using returned unsubscribe function
     const unsub = sub.notification((notif) => {
-      console.log(notif)
+      /** Do something with a notification event **/
     });
 
     unsub()
@@ -106,7 +149,9 @@ sub.notification((notif) => {
 
 Triggered when the subscription is successfully established.
 
-```ts
+```ts twoslash
+// @include: sub
+// ---cut---
 sub.subscribed(() => {
   /** Do something after successful subscription **/
 })

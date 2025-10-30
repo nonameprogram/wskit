@@ -1,9 +1,7 @@
 import { StyledLink } from '@/components/styled-link'
 import { Tabs } from 'nextra/components';
 import { Callout } from 'nextra/components'
-import { TSDoc, generateDefinition } from 'nextra/tsdoc'
-import Unsubscribe from '../../components/blocks/unsubscribe.mdx'
-import ChatsPresence from '../../components/blocks/chats-presence.mdx'
+
 
 <div className="hidden">
 ```ts twoslash include main
@@ -12,18 +10,23 @@ import Pusher from 'pusher-js';
 
 declare module 'websocketkit' {
   interface ChannelRegistry {
-    'chats.$chatId': {
-      type: 'presence';
-      params: {
-        chatId: string;
-      };
+    'orders': {
+      type: 'private';
+      params: {};
       events: {
-        messageSent: {
-          userId: string,
-          message: string,
+        orderShipped: {
+          orderId: string,
+          trackId: string,
+          status: number,
           timestamp: string,
         }
       };
+      whispers: {
+        noteAdded: {
+          orderId: string,
+          note: string,
+        }
+      }
     };
   }
 }
@@ -35,9 +38,9 @@ const wskit = new WsKit(pusher);
 ```
 </div>
 
-# Presence channel
+# Private channel
 
-Presence channels build on the security of Private channels and expose the additional feature of an awareness of who is subscribed to that channel.
+Private channels should be used when access to the channel needs to be restricted in some way. In order for a user to subscribe to a private channel permission must be authorized.
 
 ## Subscribe
 
@@ -46,7 +49,7 @@ Create a subscription to a specific channel. Provide any required parameters for
 ```ts twoslash include sub
 // @include: main
 // ---cut---
-const sub = wskit.subscribe('chats.$chatId', { type: 'presence', params: { chatId: '1' }});
+const sub = wskit.subscribe('orders', { type: 'private', params: {} })
 ```
 
 ## Unsubscribe
@@ -68,8 +71,8 @@ Subscribe to a specific event on the channel.
 ```ts twoslash
 // @include: sub
 // ---cut---
-sub.on('messageSent', (event) => {
-  /** Hover over `event` to view its inferred type */
+sub.on('orderShipped', (event) => {
+  /** Do something with the event **/
 })
 ```
 
@@ -83,15 +86,15 @@ Remove a specific listener using either the returned unsubscribe function or the
 
 <Tabs items={['Using returned unsubscribe function', 'Using original callback reference']}>
   <Tabs.Tab>
-```ts twoslash
-// @include: sub
-// ---cut---
-const unsub = sub.on('messageSent', (event) => {
-  /** Hover over `event` to view its inferred type */
-})
+    ```ts twoslash
+    // @include: sub
+    // ---cut---
+    const unsub = sub.on('orderShipped', (event) => {
+      /** Do something with the event **/
+    })
 
-//Later
-unsub();
+    // Later
+    unsub();
     ```
   </Tabs.Tab>
   <Tabs.Tab>
@@ -99,14 +102,14 @@ unsub();
     // @include: sub
     // ---cut---
     /** You have to explicitly define the type of the event **/
-    const messageSentHandler = (event: { userId: string, message: string }) => {
+    const orderShippedHandler = (event: { orderId: string, trackId: string, status: number, timestamp: string }) => {
       /** Do something with the event **/
-    }
+    };
 
-    const unsub = sub.on('messageSent', messageSentHandler)
+    sub.on('orderShipped', orderShippedHandler);
 
-    //Later
-    sub.off('messageSent', messageSentHandler);
+    // Later
+    sub.off('orderShipped', orderShippedHandler);
     ```
   </Tabs.Tab>
 </Tabs>
@@ -121,7 +124,7 @@ Listen for `.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated` ev
 // @include: sub
 // ---cut---
 sub.notification((notif) => {
-  console.log(notif)
+  /** Do something with a notification event **/
 });
 ```
 
@@ -136,9 +139,8 @@ sub.notification((notif) => {
     ```ts twoslash
     // @include: sub
     // ---cut---
-    // Using returned unsubscribe function
     const unsub = sub.notification((notif) => {
-      console.log(notif)
+      /** Do something with a notification event **/
     });
 
     unsub()
@@ -155,24 +157,23 @@ Communicate directly with other subscribers on the channel.
 ```ts twoslash
 // @include: sub
 // ---cut---
-sub.whisper('userIsTyping', { userId });
+sub.whisper('noteAdded', { orderId: 'rBei1FD7egstHQrplQeou', note: 'Review required' });
 ```
 
 ### Listen for a whisper
 
-```ts twoslash
-// @include: sub
-// ---cut---
-sub.listenForWhisper('userIsTyping', (event) => {
-  /** Do something with the event **/
-})
-```
-
-### Stop listening for a whisper
-
 <Callout type="important">
   This should only be used when you want to stop listening for a specific event without unsubscribing from the channel; otherwise, calling `sub.dispose()` is sufficient.
 </Callout>
+
+```ts twoslash
+// @include: sub
+// ---cut---
+sub.listenForWhisper('noteAdded', (event) => {
+  /** Do something with a notification event **/
+});
+```
+### Stop listening for a whisper
 
 <Tabs items={['Using returned unsubscribe function', 'Using original callback reference']}>
   <Tabs.Tab>
@@ -180,8 +181,8 @@ sub.listenForWhisper('userIsTyping', (event) => {
     // @include: sub
     // ---cut---
     // Using returned unsubscribe function
-    const unsub = sub.listenForWhisper('userIsTyping', (event) => {
-      console.log(event);
+    const unsub = sub.listenForWhisper('noteAdded', (event) => {
+      /** Do something with a notification event **/
     });
 
     unsub();
@@ -191,58 +192,18 @@ sub.listenForWhisper('userIsTyping', (event) => {
     ```ts twoslash
     // @include: sub
     // ---cut---
-    // Using original callback reference
-    const userIsTypingHandler = (event) => {
-      console.log(event);
+    /** You have to explicitly define the type of the event **/
+    const noteAddedHandler = (event: { orderId: string, note: string }) => {
+      /** Do something with a notification event **/
     }
 
-    sub.listenForWhisper('userIsTyping', userIsTypingHandler);
+    sub.listenForWhisper('noteAdded', noteAddedHandler);
 
     // Later
-    sub.stopListeningForWhisper('userIsTyping', userIsTypingHandler);
+    sub.stopListeningForWhisper('noteAdded', noteAddedHandler);
     ```
   </Tabs.Tab>
 </Tabs>
-
-## Presence Events
-
-Presence channels have a number of pre-defined events that can be bound to in order to notify a connected client about users joining or leaving the channel.
-
-### Here
-
-The `here` callback will be executed immediately once the channel is joined successfully, and will receive an array containing the user information for all of the other users currently subscribed to the channel.
-
-```ts twoslash
-// @include: sub
-// ---cut---
-sub.here((members) => {
-  console.log(members);
-})
-```
-
-### Joining
-
-Triggered when someone joins the channel.
-
-```ts twoslash
-// @include: sub
-// ---cut---
-sub.joining((member) => {
-  console.log(member);
-})
-```
-
-### Leaving
-
-Triggered when someone leaves the channel.
-
-```ts twoslash
-// @include: sub
-// ---cut---
-sub.leaving((member) => {
-  console.log(member);
-})
-```
 
 ## Internal Events
 
